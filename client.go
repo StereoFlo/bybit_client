@@ -88,7 +88,7 @@ func (c Client) makeRequest(method string, url string, body io.Reader) *http.Req
 func (c Client) doRequest(request *http.Request) *http.Response {
 	response, err := c.client.Do(request)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return response
 }
