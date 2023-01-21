@@ -19,14 +19,14 @@ type Client struct {
 	url        string
 	apiKey     string
 	apiSecret  string
-	recvWindow int
+	recvWindow string
 	client     *http.Client
 	isDebug    bool
 }
 
-func NewClient(url string, apiKey string, apiSecret string, recvWindow int, client *http.Client, isDebug bool) *Client {
+func NewClient(url string, apiKey string, apiSecret string, recvWindow string, client *http.Client, isDebug bool) *Client {
 	return &Client{
-		url: 		url,
+		url:        url,
 		apiKey:     apiKey,
 		apiSecret:  apiSecret,
 		recvWindow: recvWindow,
@@ -35,18 +35,19 @@ func NewClient(url string, apiKey string, apiSecret string, recvWindow int, clie
 	}
 }
 
-func (c Client) GetRequest(params string, endPoint string) []byte {
+func (c Client) GetRequest(endPoint string, params *string) []byte {
 	now := time.Now()
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
+	t := *params
 	signature := c.getSignature(timeStamp, params)
-	request := c.makeRequest("GET", c.url+endPoint+"?"+params, nil)
+	request := c.makeRequest("GET", c.url+endPoint+"?"+t, nil)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-BAPI-API-KEY", c.apiKey)
 	request.Header.Set("X-BAPI-SIGN", signature)
 	request.Header.Set("X-BAPI-TIMESTAMP", strconv.FormatInt(timeStamp, 10))
 	request.Header.Set("X-BAPI-SIGN-TYPE", "2")
-	request.Header.Set("X-BAPI-RECV-WINDOW", strconv.Itoa(c.recvWindow))
+	request.Header.Set("X-BAPI-RECV-WINDOW", c.recvWindow)
 	if c.isDebug {
 		c.dumpRequest(request)
 	}
@@ -67,7 +68,9 @@ func (c Client) PostRequest(params interface{}, endPoint string) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	signature := c.getSignature(timeStamp, string(jsonData[:]))
+	var signData string
+	signData = string(jsonData[:])
+	signature := c.getSignature(timeStamp, &signData)
 	request := c.makeRequest("POST", c.url+endPoint, bytes.NewBuffer(jsonData))
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
@@ -120,12 +123,13 @@ func (c Client) setHeader(request *http.Request, signature string, timeStamp int
 	request.Header.Set("X-BAPI-SIGN", signature)
 	request.Header.Set("X-BAPI-TIMESTAMP", strconv.FormatInt(timeStamp, 10))
 	request.Header.Set("X-BAPI-SIGN-TYPE", "2")
-	request.Header.Set("X-BAPI-RECV-WINDOW", strconv.Itoa(c.recvWindow))
+	request.Header.Set("X-BAPI-RECV-WINDOW", c.recvWindow)
 }
 
-func (c Client) getSignature(timeStamp int64, params string) string {
+func (c Client) getSignature(timeStamp int64, params *string) string {
 	hmac256 := hmac.New(sha256.New, []byte(c.apiKey))
-	hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + strconv.Itoa(c.recvWindow) + params))
+	p := *params
+	hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + p))
 	signature := hex.EncodeToString(hmac256.Sum(nil))
 	return signature
 }
