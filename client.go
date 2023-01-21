@@ -43,26 +43,16 @@ func (c Client) GetRequest(params string, endPoint string) []byte {
 	request, err := http.NewRequest("GET", url+endPoint+"?"+params, nil)
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
-		reqDump, err := httputil.DumpRequestOut(request, true)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("Request Dump:\n%s", string(reqDump))
+		c.dumpRequest(request)
 	}
 	response, err := c.client.Do(request)
 	if err != nil {
 		panic(err)
 	}
 	defer response.Body.Close()
-	if c.isDebug {
-		elapsed := time.Since(now).Seconds()
-		fmt.Printf("\n%s took %v seconds \n", endPoint, elapsed)
-		fmt.Println("response Status:", response.Status)
-		fmt.Println("response Headers:", response.Header)
-	}
 	body, _ := io.ReadAll(response.Body)
 	if c.isDebug {
-		fmt.Println("response Body:", string(body))
+		c.debugResponse(now, endPoint, response, body)
 	}
 	return body
 }
@@ -79,11 +69,7 @@ func (c Client) PostRequest(client *http.Client, params interface{}, endPoint st
 	request, err := http.NewRequest("POST", url+endPoint, bytes.NewBuffer(jsonData))
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
-		reqDump, err := httputil.DumpRequestOut(request, true)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("Request Dump:\n%s", string(reqDump))
+		c.dumpRequest(request)
 	}
 	response, err := client.Do(request)
 	if err != nil {
@@ -92,13 +78,25 @@ func (c Client) PostRequest(client *http.Client, params interface{}, endPoint st
 	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	if c.isDebug {
-		elapsed := time.Since(now).Seconds()
-		fmt.Printf("\n%s took %v seconds \n", endPoint, elapsed)
-		fmt.Println("response Status:", response.Status)
-		fmt.Println("response Headers:", response.Header)
-		fmt.Println("response Body:", string(body))
+		c.debugResponse(now, endPoint, response, body)
 	}
 	return body
+}
+
+func (c Client) debugResponse(now time.Time, endPoint string, response *http.Response, body []byte) {
+	elapsed := time.Since(now).Seconds()
+	fmt.Printf("\n%s took %v seconds \n", endPoint, elapsed)
+	fmt.Println("response Status:", response.Status)
+	fmt.Println("response Headers:", response.Header)
+	fmt.Println("response Body:", string(body))
+}
+
+func (c Client) dumpRequest(request *http.Request) {
+	reqDump, err := httputil.DumpRequestOut(request, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Request Dump:\n%s", string(reqDump))
 }
 
 func (c Client) setHeader(request *http.Request, signature string, timeStamp int64) {
