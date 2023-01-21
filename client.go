@@ -20,10 +20,19 @@ var url = "https://api-testnet.bybit.com"
 type Client struct {
 	apiKey     string
 	apiSecret  string
-	signature  string
 	recvWindow int
 	client     *http.Client
 	isDebug    bool
+}
+
+func NewClient(apiKey string, apiSecret string, recvWindow int, client *http.Client, isDebug bool) *Client {
+	return &Client{
+		apiKey:     apiKey,
+		apiSecret:  apiSecret,
+		recvWindow: recvWindow,
+		client:     client,
+		isDebug:    isDebug,
+	}
 }
 
 func (c Client) GetRequest(params string, endPoint string) []byte {
