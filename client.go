@@ -15,9 +15,8 @@ import (
 	"time"
 )
 
-var url = "https://api-testnet.bybit.com"
-
 type Client struct {
+	url        string
 	apiKey     string
 	apiSecret  string
 	recvWindow int
@@ -40,7 +39,7 @@ func (c Client) GetRequest(params string, endPoint string) []byte {
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
 	signature := c.getSignature(timeStamp, params)
-	request := c.makeRequest("GET", url+endPoint+"?"+params, nil)
+	request := c.makeRequest("GET", c.url+endPoint+"?"+params, nil)
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
 		c.dumpRequest(request)
@@ -63,7 +62,7 @@ func (c Client) PostRequest(params interface{}, endPoint string) []byte {
 		log.Fatal(err)
 	}
 	signature := c.getSignature(timeStamp, string(jsonData[:]))
-	request := c.makeRequest("GET", url+endPoint, bytes.NewBuffer(jsonData))
+	request := c.makeRequest("POST", c.url+endPoint, bytes.NewBuffer(jsonData))
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
 		c.dumpRequest(request)
