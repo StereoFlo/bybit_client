@@ -41,7 +41,12 @@ func (c Client) GetRequest(params string, endPoint string) []byte {
 	timeStamp := unixNano / 1000000
 	signature := c.getSignature(timeStamp, params)
 	request := c.makeRequest("GET", c.url+endPoint+"?"+params, nil)
-	c.setHeader(request, signature, timeStamp)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-BAPI-API-KEY", c.apiKey)
+	request.Header.Set("X-BAPI-SIGN", signature)
+	request.Header.Set("X-BAPI-TIMESTAMP", strconv.FormatInt(timeStamp, 10))
+	request.Header.Set("X-BAPI-SIGN-TYPE", "2")
+	request.Header.Set("X-BAPI-RECV-WINDOW", strconv.Itoa(c.recvWindow))
 	if c.isDebug {
 		c.dumpRequest(request)
 	}
