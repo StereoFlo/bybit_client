@@ -54,7 +54,7 @@ func (c Client) GetRequest(params string, endPoint string) []byte {
 	return body
 }
 
-func (c Client) PostRequest(client *http.Client, params interface{}, endPoint string) []byte {
+func (c Client) PostRequest(params interface{}, endPoint string) []byte {
 	now := time.Now()
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
