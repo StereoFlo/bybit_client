@@ -24,8 +24,9 @@ type Client struct {
 	isDebug    bool
 }
 
-func NewClient(apiKey string, apiSecret string, recvWindow int, client *http.Client, isDebug bool) *Client {
+func NewClient(url string, apiKey string, apiSecret string, recvWindow int, client *http.Client, isDebug bool) *Client {
 	return &Client{
+		url: 		url,
 		apiKey:     apiKey,
 		apiSecret:  apiSecret,
 		recvWindow: recvWindow,
