@@ -39,9 +39,6 @@ func (c Client) GetRequest(endPoint string, params string) []byte {
 	now := time.Now()
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
-	//hmac256 := hmac.New(sha256.New, []byte(c.apiSecret))
-	//hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + params))
-	//signature := hex.EncodeToString(hmac256.Sum(nil))
 	signature := c.getSignature(timeStamp, params)
 	request := c.makeRequest("GET", c.url+endPoint+"?"+params, nil)
 	c.setHeader(request, signature, timeStamp)
