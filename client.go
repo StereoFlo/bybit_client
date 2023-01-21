@@ -1,4 +1,4 @@
-package bybit_client
+package client
 
 import (
 	"bytes"
@@ -35,15 +35,15 @@ func NewClient(url string, apiKey string, apiSecret string, recvWindow string, c
 	}
 }
 
-func (c Client) GetRequest(endPoint string, params *string) []byte {
+func (c Client) GetRequest(endPoint string, params string) []byte {
 	now := time.Now()
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
-	t := *params
-	hmac256 := hmac.New(sha256.New, []byte(c.apiSecret))
-	hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + *params))
-	signature := hex.EncodeToString(hmac256.Sum(nil))
-	request := c.makeRequest("GET", c.url+endPoint+"?"+t, nil)
+	//hmac256 := hmac.New(sha256.New, []byte(c.apiSecret))
+	//hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + params))
+	//signature := hex.EncodeToString(hmac256.Sum(nil))
+	signature := c.getSignature(timeStamp, params)
+	request := c.makeRequest("GET", c.url+endPoint+"?"+params, nil)
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
 		c.dumpRequest(request)
@@ -65,9 +65,7 @@ func (c Client) PostRequest(params interface{}, endPoint string) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var signData string
-	signData = string(jsonData[:])
-	signature := c.getSignature(timeStamp, &signData)
+	signature := c.getSignature(timeStamp, string(jsonData[:]))
 	request := c.makeRequest("POST", c.url+endPoint, bytes.NewBuffer(jsonData))
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
@@ -123,10 +121,9 @@ func (c Client) setHeader(request *http.Request, signature string, timeStamp int
 	request.Header.Set("X-BAPI-RECV-WINDOW", c.recvWindow)
 }
 
-func (c Client) getSignature(timeStamp int64, params *string) string {
-	hmac256 := hmac.New(sha256.New, []byte(c.apiKey))
-	p := *params
-	hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + p))
+func (c Client) getSignature(timeStamp int64, params string) string {
+	hmac256 := hmac.New(sha256.New, []byte(c.apiSecret))
+	hmac256.Write([]byte(strconv.FormatInt(timeStamp, 10) + c.apiKey + c.recvWindow + params))
 	signature := hex.EncodeToString(hmac256.Sum(nil))
 	return signature
 }
