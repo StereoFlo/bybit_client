@@ -40,15 +40,12 @@ func (c Client) GetRequest(params string, endPoint string) []byte {
 	unixNano := now.UnixNano()
 	timeStamp := unixNano / 1000000
 	signature := c.getSignature(timeStamp, params)
-	request, err := http.NewRequest("GET", url+endPoint+"?"+params, nil)
+	request := c.makeRequest("GET", url+endPoint+"?"+params, nil)
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
 		c.dumpRequest(request)
 	}
-	response, err := c.client.Do(request)
-	if err != nil {
-		panic(err)
-	}
+	response := c.doRequest(request)
 	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	if c.isDebug {
@@ -66,21 +63,34 @@ func (c Client) PostRequest(client *http.Client, params interface{}, endPoint st
 		log.Fatal(err)
 	}
 	signature := c.getSignature(timeStamp, string(jsonData[:]))
-	request, err := http.NewRequest("POST", url+endPoint, bytes.NewBuffer(jsonData))
+	request := c.makeRequest("GET", url+endPoint, bytes.NewBuffer(jsonData))
 	c.setHeader(request, signature, timeStamp)
 	if c.isDebug {
 		c.dumpRequest(request)
 	}
-	response, err := client.Do(request)
-	if err != nil {
-		panic(err)
-	}
+	response := c.doRequest(request)
 	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	if c.isDebug {
 		c.debugResponse(now, endPoint, response, body)
 	}
 	return body
+}
+
+func (c Client) makeRequest(method string, url string, body io.Reader) *http.Request {
+	request, err := http.NewRequest(method, url, body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return request
+}
+
+func (c Client) doRequest(request *http.Request) *http.Response {
+	response, err := c.client.Do(request)
+	if err != nil {
+		panic(err)
+	}
+	return response
 }
 
 func (c Client) debugResponse(now time.Time, endPoint string, response *http.Response, body []byte) {
